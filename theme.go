@@ -18,7 +18,7 @@ func newFysionTheme() fyne.Theme {
 func (t *fysionTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	if name == theme.ColorNameBackground {
 		if variant == theme.VariantLight {
-			return hexColor("#AEDAFDFD")
+			return hexColor("#1aafd0fd")
 
 		}
 		return hexColor("#FCCFAAFD")
@@ -33,7 +33,7 @@ func (t *fysionTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant)
 		return hexColor("#585858FD")
 	}
 	if name == theme.ColorNameButton {
-		return hexColor("#F5F77EFD")
+		return hexColor("#ffb900")
 	}
 
 	return t.Theme.Color(name, variant)
