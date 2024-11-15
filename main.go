@@ -15,9 +15,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// var wid1 []*fyne.CanvasObject
-var content1, casewindow fyne.Container
-var sctitle fyne.Container
+var content1, casewindow, sctitle *fyne.Container
+
+// var sctitle fyne.Container
 var cases []scenarios
 
 //var scenariotitle string = "New Scenario"
@@ -29,15 +29,26 @@ func main() {
 	w := a.NewWindow("HW")
 	w.Title()
 	w.Resize(fyne.NewSize(400, 400))
-	w.SetContent(inputwindow(w))
+	w.SetContent(container.NewStack(viewmaker(w), casewindow))
 	w.ShowAndRun()
 }
 
-// creates input window
-func inputwindow(w fyne.Window) *fyne.Container {
+func viewmaker(w fyne.Window) fyne.CanvasObject {
+	as, debstscpoption := assumptionbuild()
+	tabs := inputtabmaker(as)
+	submits := actionbuttons(w, as, debstscpoption)
+	inputbuilder(importassumptions(), as)
+	content1 = inputrenderer(as, "Commercial")
+	scenariotitle("New Scenario")
+	caserenderer(as)
+	return container.NewBorder(container.NewGridWithRows(1, tabs...), container.NewGridWithRows(1, submits...), nil, nil, container.NewVBox(sctitle, content1))
+}
+
+// assumption set
+func assumptionbuild() (map[string][]assumptions, []string) {
 	as := make(map[string][]assumptions, 0)
 	debtscpoption := []string{"Equal", "Sculpted"}
-	tabs := []string{"Commercial", "Projects", "Financing", "Others"}
+	//tabs := []string{"Commercial", "Projects", "Financing", "Others"}
 	as["Commercial"] = append(as["Commercial"], newAssumptionE("Capacity", "MW"))
 	as["Commercial"] = append(as["Commercial"], newAssumptionE("PPA Length", "years"))
 	as["Commercial"] = append(as["Commercial"], newAssumptionE("Construction Period", "months"))
@@ -65,46 +76,87 @@ func inputwindow(w fyne.Window) *fyne.Container {
 	as["Others"] = append(as["Others"], newAssumptionE("Non Depreciable Value", "%"))
 	as["Others"] = append(as["Others"], newAssumptionE("Payables", "days"))
 	as["Others"] = append(as["Others"], newAssumptionE("Receivables", "days"))
+	return as, debtscpoption
+}
 
-	content1 = *inputrenderer(as, tabs[0])
-	var toptab *fyne.Container
+func inputtabmaker(as map[string][]assumptions) []fyne.CanvasObject {
+	var tabs []string
+	for tab := range as {
+		tabs = append(tabs, tab)
+	}
+	inputrenderer(as, tabs[0])
 	click := tabs[0]
 	tabsbtn := make([]fyne.CanvasObject, len(tabs))
 	for i := 0; i < len(tabs); i++ {
 		tabsbtn[i] = widget.NewButton(tabs[i], func() {
 			if click != tabs[i] {
-				content1 = *inputrenderer(as, tabs[i])
+				content1 = inputrenderer(as, tabs[i])
 				click = tabs[i]
 			}
 		})
 	}
-	toptab = container.NewGridWithRows(1, tabsbtn...)
-	scenariotitle("New Scenario")
+	return tabsbtn
+}
+
+func actionbuttons(w fyne.Window, as map[string][]assumptions, debtscpoption []string) []fyne.CanvasObject {
 	inputs := make(map[string]float64, 0)
-	caserenderer(as)
 	var case1 scenarios
-	submit := widget.NewButton("Run Scenario", func() {
+	submitbtn := make([]fyne.CanvasObject, 0)
+	submitbtn = append(submitbtn, widget.NewButton("Run Scenario", func() {
 		inputs = inputgrab(as)
 		IRRmake(IRRmodel(inputs, debtscpoption))
-	})
-	savecase := widget.NewButton("Run and Save Scenario", func() {
+	}))
+	submitbtn = append(submitbtn, widget.NewButton("Run and Save Scenario", func() {
 		inputs = inputgrab(as)
 		case1.Inputs = inputGrabAsStr(as)
 		case1.Model = IRRmodel(inputs, debtscpoption)
 		case1.Irr = IRRmake(case1.Model)
 		a := scenarioname(w, case1, as)
 		a.Show()
-	})
-	excel := widget.NewButton("Save As Excel", func() {
+	}))
+	submitbtn = append(submitbtn, widget.NewButton("Save As Excel", func() {
 		inputs = inputgrab(as)
 		excelfill(IRRmodel(inputs, debtscpoption))
-	})
+	}))
+	return submitbtn
+}
+
+// takes assumptions as per category into widgets and displays
+func inputrenderer(as map[string][]assumptions, selectedTab string) *fyne.Container {
+	var wid1 []fyne.CanvasObject
+	for i := range as[selectedTab] {
+		abds := (as[selectedTab][i]).inputmaker()
+		wid1 = append(wid1, abds)
+	}
+	fmt.Println(selectedTab, "was pressed")
+	return container.NewVBox(wid1...)
+}
+
+func scenariotitle(title1 string) {
+	//var k appLabelWidget
+	k := widget.NewLabel(title1)
+	k.Alignment = fyne.TextAlignCenter
+	k.TextStyle = fyne.TextStyle{Bold: true,
+		Underline: true}
+	kb := canvas.NewRectangle(hexColor("#8AF3A4FF"))
+	sctitle = container.New(layout.NewStackLayout(), kb, k)
+}
+
+// creates input window
+/*func inputwindow(w fyne.Window) *fyne.Container {
+
+
+	//var toptab *fyne.Container
+	//toptab = container.NewGridWithRows(1, tabsbtn...)
+	scenariotitle("New Scenario")
+	caserenderer(as)
+
 	bottomtab := container.NewGridWithRows(1, widget.NewLabel(""), submit, savecase, excel, widget.NewLabel(""))
 	inputbuilder(importassumptions(), as)
 	middleportion := container.NewBorder(nil, bottomtab, nil, nil, container.NewVBox(toptab, &sctitle, &content1))
 	//middleportion.Resize(fyne.NewSize(300, 400))
 	return container.NewBorder(nil, nil, nil, &casewindow, middleportion)
-}
+}*/
 
 type entryassumptions struct {
 	Name  string
@@ -208,39 +260,6 @@ func (assumption selectassumptions) inputmaker() fyne.CanvasObject {
 	return abds
 }
 
-func scenariotitle(title1 string) {
-	sctitle.RemoveAll()
-	k := widget.NewLabel(title1)
-
-	//k.Resize(fyne.NewSize(100, 30))
-	//k.Move(fyne.NewPos(360, 0))
-	k.Alignment = fyne.TextAlignCenter
-	k.TextStyle = fyne.TextStyle{Bold: true,
-		Underline: true}
-	l := canvas.NewRectangle(hexColor("#8AF3A4FF"))
-	l.Resize(k.Size())
-	k.Theme().Color(themex, fyne.ThemeVariant(0))
-	//fmt.Println(k.Size().Height, k.Size().Width, l.Size().Height)
-	sctitle = *container.New(layout.NewStackLayout(), l, k)
-
-	sctitle.Resize(fyne.NewSize(775, 35))
-	sctitle.Move(fyne.Position{X: 0, Y: 40})
-}
-
-// takes assumptions as per category into widgets and displays
-func inputrenderer(as map[string][]assumptions, selectedTab string) *fyne.Container {
-	var wid1 []fyne.CanvasObject
-	//wid1 = append(wid1, &sctitle)
-	//wid1 = append(wid1, (widget.NewLabelWithStyle(scenariotitle, fyne.TextAlignCenter, fyne.TextStyle{Bold: true})))
-	for i := range as[selectedTab] {
-		abds := (as[selectedTab][i]).inputmaker()
-		wid1 = append(wid1, abds)
-	}
-	//k:=*(widget.NewLabelWithStyle(scenariotitle,fyne.TextAlignCenter,fyne.TextStyle{Bold:true}))
-
-	return container.NewVBox(wid1...)
-}
-
 // create formdialog for scenario name
 func scenarioname(w fyne.Window, case1 scenarios, as map[string][]assumptions) *dialog.FormDialog {
 	a := widget.NewEntry()
@@ -289,7 +308,7 @@ func caserenderer(as map[string][]assumptions) {
 		container2 := container.New(layout.NewStackLayout(), containerColor, container1)
 		outer = append(outer, container2)
 	}
-	casewindow = *container.NewVBox(outer...)
+	casewindow = container.NewVBox(outer...)
 	casewindow.Resize(fyne.NewSize(100, 200))
 }
 
