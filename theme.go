@@ -11,6 +11,8 @@ type fysionTheme struct {
 	fyne.Theme
 }
 
+var themex fyne.ThemeColorName = "name"
+
 func newFysionTheme() fyne.Theme {
 	return &fysionTheme{Theme: theme.DefaultTheme()}
 }
@@ -18,7 +20,7 @@ func newFysionTheme() fyne.Theme {
 func (t *fysionTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	if name == theme.ColorNameBackground {
 		if variant == theme.VariantLight {
-			return hexColor("#1aafd0fd")
+			return hexColor("#C0D2D6FD")
 
 		}
 		return hexColor("#FCCFAAFD")
@@ -29,13 +31,18 @@ func (t *fysionTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant)
 	if name == theme.ColorNameInputBackground {
 		return hexColor("#FFFFFFFF")
 	}
+	if name == theme.ColorNameInputBorder {
+		return hexColor("#585858FD")
+	}
 	if name == theme.ColorNameForeground {
 		return hexColor("#585858FD")
 	}
 	if name == theme.ColorNameButton {
 		return hexColor("#ffb900")
 	}
-
+	if name == themex {
+		return hexColor("#FF0000FF")
+	}
 	return t.Theme.Color(name, variant)
 }
 
@@ -82,3 +89,44 @@ func hexColor(s string) (c color.RGBA) {
 	}
 	return
 }
+
+/*
+type interiorTheme struct {
+	fyne.Theme
+}
+
+func newInteriorTheme() fyne.Theme {
+	return &fysionTheme{Theme: theme.DefaultTheme()}
+}
+
+func (t *interiorTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+	if name == theme.ColorNameBackground {
+		if variant == theme.VariantLight {
+			return hexColor("#D2EAF0FD")
+
+		}
+		return hexColor("#FCCFAAFD")
+	}
+	if name == theme.ColorNameHeaderBackground {
+		return hexColor("#FDF6CAFD")
+	}
+	if name == theme.ColorNameInputBorder {
+		return hexColor("#585858FD")
+	}
+	if name == theme.ColorNameForeground {
+		return hexColor("#585858FD")
+	}
+	if name == theme.ColorNameButton {
+		return hexColor("#ffb900")
+	}
+	return t.Theme.Color(name, variant)
+}
+
+func (t *interiorTheme) Size(name fyne.ThemeSizeName) float32 {
+	if name == theme.SizeNameText {
+		return 12
+	}
+
+	return t.Theme.Size(name)
+}
+*/
