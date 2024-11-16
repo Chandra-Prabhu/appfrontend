@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -19,6 +20,7 @@ import (
 var content1, casewindow fyne.Container
 var sctitle fyne.Container
 var cases []scenarios
+var titelcol color.RGBA = hexColor("#B9C3FDFD")
 
 //var scenariotitle string = "New Scenario"
 
@@ -101,7 +103,7 @@ func inputwindow(w fyne.Window) *fyne.Container {
 	})
 	bottomtab := container.NewGridWithRows(1, widget.NewLabel(""), submit, savecase, excel, widget.NewLabel(""))
 	inputbuilder(importassumptions(), as)
-	middleportion := container.NewBorder(nil, bottomtab, nil, nil, container.NewVBox(toptab, &sctitle, &content1))
+	middleportion := container.NewBorder(container.NewVBox(&sctitle, widget.NewSeparator(), toptab), bottomtab, nil, nil, &content1)
 	//middleportion.Resize(fyne.NewSize(300, 400))
 	return container.NewBorder(nil, nil, nil, &casewindow, middleportion)
 }
@@ -217,14 +219,14 @@ func scenariotitle(title1 string) {
 	k.Alignment = fyne.TextAlignCenter
 	k.TextStyle = fyne.TextStyle{Bold: true,
 		Underline: true}
-	l := canvas.NewRectangle(hexColor("#8AF3A4FF"))
+	l := canvas.NewRectangle(titelcol)
 	l.Resize(k.Size())
 	k.Theme().Color(themex, fyne.ThemeVariant(0))
 	//fmt.Println(k.Size().Height, k.Size().Width, l.Size().Height)
 	sctitle = *container.New(layout.NewStackLayout(), l, k)
 
-	sctitle.Resize(fyne.NewSize(775, 35))
-	sctitle.Move(fyne.Position{X: 0, Y: 40})
+	sctitle.Resize(fyne.NewSize(775, 32.5))
+	sctitle.Move(fyne.Position{X: 0, Y: 0})
 }
 
 // takes assumptions as per category into widgets and displays
@@ -258,38 +260,51 @@ func scenarioname(w fyne.Window, case1 scenarios, as map[string][]assumptions) *
 				cases = append(cases, case1)
 				//fmt.Println(cases[len(cases)-1].Name)
 				caserenderer(as)
+				scenariotitle(a.Text)
 			}
 		}, w)
 	//fmt.Println(case1.Name)
 	return wap
 }
 
+func trunc(word string) string {
+	if len(word) > 15 {
+		return word[:15] + ".."
+	} else {
+		return word
+	}
+}
+
 // creates the case window on the left side as it gets saved
 func caserenderer(as map[string][]assumptions) {
 	outer := make([]fyne.CanvasObject, 0)
 	//var name string
+	header := container.New(layout.NewStackLayout(), canvas.NewRectangle(titelcol), widget.NewLabelWithStyle("Saved Cases", fyne.TextAlignCenter, fyne.TextStyle{Bold: true, Underline: true}))
+	outer = append(outer, header)
+	outer = append(outer, widget.NewSeparator())
 	for k, i := range cases {
-		a := widget.NewLabel(i.Name)
+		a := widget.NewLabel(trunc(i.Name))
 		b := widget.NewLabel(fmt.Sprintf("%.1f", i.Irr*100) + " %")
 		a.Resize(fyne.NewSize(100, 100))
 		b.Resize(fyne.NewSize(50, 100))
-		c := widget.NewButton("Select"+i.Name, func() {
+		c := widget.NewButton("Select", func() {
 			scenariotitle(i.Name)
 			inputbuilder(i.Inputs, as)
 		})
 		c.Resize(fyne.NewSize(100, 100))
 		var containerColor *canvas.Rectangle
 		if (k/2)*2 == k {
-			containerColor = canvas.NewRectangle(hexColor("#F4F5D4FF"))
+			containerColor = canvas.NewRectangle(hexColor("#F2F594FF"))
 		} else {
-			containerColor = canvas.NewRectangle(hexColor("#83E2C6FF"))
+			containerColor = canvas.NewRectangle(hexColor("#D0D389FF"))
 		}
 		container1 := container.NewGridWithRows(1, a, b, c)
 		containerColor.Resize(container1.Size())
 		container2 := container.New(layout.NewStackLayout(), containerColor, container1)
 		outer = append(outer, container2)
 	}
-	casewindow = *container.NewVBox(outer...)
+	casebg := canvas.NewRectangle(hexColor("#F1FACCFF"))
+	casewindow = *container.NewBorder(nil, nil, widget.NewSeparator(), widget.NewSeparator(), container.New(layout.NewStackLayout(), casebg, container.NewVBox(outer...)))
 	casewindow.Resize(fyne.NewSize(100, 200))
 }
 
