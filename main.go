@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"strconv"
+	//"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -41,7 +41,7 @@ func viewmaker(w fyne.Window) fyne.CanvasObject {
 	content1 = *inputrenderer(as, "Commercial")
 	scenariotitle("New Scenario")
 	caserenderer(as)
-	return container.NewStack(container.NewBorder(tabsbuild, container.NewGridWithRows(1, submits...), nil, nil, container.NewVBox(&sctitle, &content1)), &casewindow)
+	return container.NewBorder(nil, nil, nil, &casewindow, container.NewBorder(&sctitle, container.NewGridWithRows(1, submits...), nil, nil, container.NewVBox(tabsbuild, &content1)))
 }
 
 // assumption set
@@ -124,7 +124,7 @@ func inputrenderer(as map[string][]assumptions, selectedTab string) *fyne.Contai
 		abds := (as[selectedTab][i]).inputmaker()
 		wid1 = append(wid1, abds)
 	}
-	fmt.Println(selectedTab, "was pressed")
+	//fmt.Println(selectedTab, "was pressed")
 	return container.NewVBox(wid1...)
 }
 
@@ -135,125 +135,9 @@ func scenariotitle(title1 string) {
 	k.TextStyle = fyne.TextStyle{Bold: true,
 		Underline: true}
 	kb := canvas.NewRectangle(hexColor("#8AF3A4FF"))
-	sctitle = *container.New(layout.NewStackLayout(), kb, k)
-}
-
-// creates input window
-/*func inputwindow(w fyne.Window) *fyne.Container {
-
-
-	//var toptab *fyne.Container
-	//toptab = container.NewGridWithRows(1, tabsbtn...)
-	scenariotitle("New Scenario")
-	caserenderer(as)
-
-	bottomtab := container.NewGridWithRows(1, widget.NewLabel(""), submit, savecase, excel, widget.NewLabel(""))
-	inputbuilder(importassumptions(), as)
-	middleportion := container.NewBorder(nil, bottomtab, nil, nil, container.NewVBox(toptab, &sctitle, &content1))
-	//middleportion.Resize(fyne.NewSize(300, 400))
-	return container.NewBorder(nil, nil, nil, &casewindow, middleportion)
-}*/
-
-type entryassumptions struct {
-	Name  string
-	Unit  string
-	Entry *widget.Entry
-}
-
-type selectassumptions struct {
-	Name   string
-	Unit   string
-	Select *widget.SelectEntry
-	Option []string
-}
-
-type scenarios struct {
-	Name   string
-	Inputs map[string]string
-	Model  map[string][]float64
-	Irr    float64
-}
-
-type assumptions interface {
-	inputmaker() fyne.CanvasObject
-	inputsave() float64
-	inputname() string
-	inputupdate(string)
-	inputSaveAsStr() string
-}
-
-// once submit button is triggered it fetches inputs from each entries
-func inputgrab(as map[string][]assumptions) map[string]float64 {
-	inputs := make(map[string]float64, 0)
-	for _, tabs := range as {
-		for _, assumption := range tabs {
-			inputs[assumption.inputname()] = assumption.inputsave()
-		}
-	}
-	return inputs
-}
-
-// fetch the label of the assumption
-func (assumption entryassumptions) inputname() string {
-	return assumption.Name
-}
-func (assumption selectassumptions) inputname() string {
-	return assumption.Name
-}
-
-// all the inputs are getting registered
-func (assumption entryassumptions) inputsave() float64 {
-	var input1 float64
-	a := assumption.Entry.Text
-	if string(a[len(a)-1]) == "%" {
-		a = a[:len(a)-1]
-	}
-	input1, _ = strconv.ParseFloat(a, 64)
-	return input1
-}
-
-// all the options selected are getting registered
-func (assumption selectassumptions) inputsave() float64 {
-	var o float64
-	for i, k := range assumption.Option {
-		if k == assumption.Select.Text {
-			o = float64(i)
-		}
-	}
-	return o
-}
-
-// new assumption with inputable struct is created
-func newAssumptionE(name string, unit string) entryassumptions {
-	assumption := entryassumptions{}
-	assumption.Name = name
-	assumption.Unit = unit
-	assumption.Entry = widget.NewEntry()
-	return assumption
-}
-
-// new assumption with options to select struct is created
-func newAssumptionS(name string, options []string) selectassumptions {
-	assumption := selectassumptions{}
-	assumption.Name = name
-	assumption.Select = widget.NewSelectEntry(options)
-	assumption.Option = options
-	return assumption
-}
-
-// creates input & label
-func (assumption entryassumptions) inputmaker() fyne.CanvasObject {
-	assumption.Entry.PlaceHolder = "Enter the " + assumption.Name
-	ac := widget.NewLabel(fmt.Sprint(assumption.Name + " in " + assumption.Unit))
-	abds := container.NewAdaptiveGrid(2, ac, assumption.Entry)
-	return abds
-}
-
-// creates input with options & Label
-func (assumption selectassumptions) inputmaker() fyne.CanvasObject {
-	ac := widget.NewLabel(fmt.Sprint("Select ", assumption.Name, " Method"))
-	abds := container.NewAdaptiveGrid(2, ac, assumption.Select)
-	return abds
+	sctitle = *container.NewVBox(widget.NewSeparator(), container.New(layout.NewStackLayout(), kb, k), widget.NewSeparator())
+	//sctitle.Move(fyne.Position{X: 0, Y: 45})
+	sctitle.Resize(fyne.NewSize(460, 30))
 }
 
 // create formdialog for scenario name
@@ -273,6 +157,7 @@ func scenarioname(w fyne.Window, case1 scenarios, as map[string][]assumptions) *
 				cases = append(cases, case1)
 				//fmt.Println(cases[len(cases)-1].Name)
 				caserenderer(as)
+				scenariotitle(a.Text)
 			}
 		}, w)
 	//fmt.Println(case1.Name)
@@ -283,12 +168,14 @@ func scenarioname(w fyne.Window, case1 scenarios, as map[string][]assumptions) *
 func caserenderer(as map[string][]assumptions) {
 	outer := make([]fyne.CanvasObject, 0)
 	//var name string
+	outer = append(outer, widget.NewLabelWithStyle("Saved Cases", fyne.TextAlignCenter, fyne.TextStyle{Bold: true, Underline: true}))
+	outer = append(outer, widget.NewSeparator())
 	for k, i := range cases {
 		a := widget.NewLabel(i.Name)
 		b := widget.NewLabel(fmt.Sprintf("%.1f", i.Irr*100) + " %")
 		a.Resize(fyne.NewSize(100, 100))
 		b.Resize(fyne.NewSize(50, 100))
-		c := widget.NewButton("Select"+i.Name, func() {
+		c := widget.NewButton("Select", func() {
 			scenariotitle(i.Name)
 			inputbuilder(i.Inputs, as)
 		})
@@ -304,27 +191,6 @@ func caserenderer(as map[string][]assumptions) {
 		container2 := container.New(layout.NewStackLayout(), containerColor, container1)
 		outer = append(outer, container2)
 	}
-	casewindow = *container.NewVBox(outer...)
+	casewindow = *container.NewBorder(widget.NewSeparator(), widget.NewSeparator(), nil, nil, container.NewVBox(outer...))
 	casewindow.Resize(fyne.NewSize(100, 200))
-}
-
-// once submit button is triggered it fetches inputs from each entries
-func inputGrabAsStr(as map[string][]assumptions) map[string]string {
-	inputs := make(map[string]string, 0)
-	for _, tabs := range as {
-		for _, assumption := range tabs {
-			inputs[assumption.inputname()] = assumption.inputSaveAsStr()
-		}
-	}
-	return inputs
-}
-
-// all the inputs are getting registered
-func (assumption entryassumptions) inputSaveAsStr() string {
-	return assumption.Entry.Text
-}
-
-// all the options selected are getting registered
-func (assumption selectassumptions) inputSaveAsStr() string {
-	return assumption.Select.Text
 }
