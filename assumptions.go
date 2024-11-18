@@ -27,6 +27,9 @@ type scenarios struct {
 	Inputs map[string]string
 	Model  map[string][]float64
 	Irr    float64
+	//Select *widget.Button
+	//Delete *widget.Button
+	//Container *fyne.Container
 }
 
 type assumptions interface {

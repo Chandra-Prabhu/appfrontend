@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"image/color"
+	"strconv"
+
 	//"strconv"
 
 	"fyne.io/fyne/v2"
@@ -15,33 +18,41 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-var content1, casewindow, sctitle fyne.Container
+var content1, casewindow, sctitle, tabsbuild, submitbtns, finaldisplay fyne.Container
+var titelcol color.RGBA = hexColor("#B9C3FDFD")
+var casecounter int = 1
+var scenarioCasecounter string = "New Scenario"
 
 // var sctitle fyne.Container
-var cases []scenarios
+var cases = make(map[string]scenarios)
 
 //var scenariotitle string = "New Scenario"
 
 func main() {
-	//fmt.Println("HW")
 	a := app.New()
 	a.Settings().SetTheme(newFysionTheme())
 	w := a.NewWindow("HW")
 	w.Title()
 	w.Resize(fyne.NewSize(400, 400))
-	w.SetContent(viewmaker(w))
+	viewmaker(w)
+	w.SetContent(&finaldisplay)
 	w.ShowAndRun()
 }
 
-func viewmaker(w fyne.Window) fyne.CanvasObject {
+func viewmaker(w fyne.Window) {
 	as, debstscpoption, tabs := assumptionbuild()
-	tabsbuild := inputtabmaker(as, tabs)
-	submits := actionbuttons(w, as, debstscpoption)
-	inputbuilder(importassumptions(), as)
+	inputtabmaker(as, tabs)
+	actionbuttons(w, as, debstscpoption)
+	if scenarioCasecounter == "New Scenario" {
+		inputbuilder(importassumptions(), as)
+	} else {
+		inputbuilder(cases[scenarioCasecounter].Inputs, as)
+	}
 	content1 = *inputrenderer(as, "Commercial")
-	scenariotitle("New Scenario")
+	scenariotitle()
 	caserenderer(as)
-	return container.NewBorder(nil, nil, nil, &casewindow, container.NewBorder(&sctitle, container.NewGridWithRows(1, submits...), nil, nil, container.NewVBox(tabsbuild, &content1)))
+	makeGUI()
+	finaldisplay.Refresh()
 }
 
 // assumption set
@@ -79,7 +90,7 @@ func assumptionbuild() (map[string][]assumptions, []string, []string) {
 	return as, debtscpoption, tabs
 }
 
-func inputtabmaker(as map[string][]assumptions, tabs []string) *fyne.Container {
+func inputtabmaker(as map[string][]assumptions, tabs []string) {
 	inputrenderer(as, tabs[0])
 	click := tabs[0]
 	tabsbtn := make([]fyne.CanvasObject, len(tabs))
@@ -87,34 +98,51 @@ func inputtabmaker(as map[string][]assumptions, tabs []string) *fyne.Container {
 		tabsbtn[i] = widget.NewButton(tabs[i], func() {
 			if click != tabs[i] {
 				content1 = *inputrenderer(as, tabs[i])
+				//makeGUI()
 				click = tabs[i]
 			}
 		})
 	}
-	return container.NewGridWithRows(1, tabsbtn...)
+	tabsbuild = *container.NewGridWithRows(1, tabsbtn...)
 }
 
-func actionbuttons(w fyne.Window, as map[string][]assumptions, debtscpoption []string) []fyne.CanvasObject {
+func actionbuttons(w fyne.Window, as map[string][]assumptions, debtscpoption []string) {
 	inputs := make(map[string]float64, 0)
-	var case1 scenarios
 	submitbtn := make([]fyne.CanvasObject, 0)
 	submitbtn = append(submitbtn, widget.NewButton("Run Scenario", func() {
 		inputs = inputgrab(as)
 		IRRmake(IRRmodel(inputs, debtscpoption))
 	}))
-	submitbtn = append(submitbtn, widget.NewButton("Run and Save Scenario", func() {
+	submitbtn = append(submitbtn, widget.NewButton("Save Scenario", func() {
 		inputs = inputgrab(as)
+		var case1 scenarios
 		case1.Inputs = inputGrabAsStr(as)
 		case1.Model = IRRmodel(inputs, debtscpoption)
 		case1.Irr = IRRmake(case1.Model)
-		a := scenarioname(w, case1, as)
+		if scenarioCasecounter == "New Scenario" {
+			a := scenarioNamePopup(w, case1, as)
+			a.Show()
+		} else {
+			case1.Name = cases[scenarioCasecounter].Name
+			cases[scenarioCasecounter] = case1
+			caserenderer(as)
+			//makeGUI()
+		}
+	}))
+	submitbtn = append(submitbtn, widget.NewButton("Save As NewScenario", func() {
+		inputs = inputgrab(as)
+		var case1 scenarios
+		case1.Inputs = inputGrabAsStr(as)
+		case1.Model = IRRmodel(inputs, debtscpoption)
+		case1.Irr = IRRmake(case1.Model)
+		a := scenarioNamePopup(w, case1, as)
 		a.Show()
 	}))
 	submitbtn = append(submitbtn, widget.NewButton("Save As Excel", func() {
 		inputs = inputgrab(as)
 		excelfill(IRRmodel(inputs, debtscpoption))
 	}))
-	return submitbtn
+	submitbtns = *container.NewGridWithRows(1, submitbtn...)
 }
 
 // takes assumptions as per category into widgets and displays
@@ -124,24 +152,26 @@ func inputrenderer(as map[string][]assumptions, selectedTab string) *fyne.Contai
 		abds := (as[selectedTab][i]).inputmaker()
 		wid1 = append(wid1, abds)
 	}
-	//fmt.Println(selectedTab, "was pressed")
 	return container.NewVBox(wid1...)
 }
 
-func scenariotitle(title1 string) {
-	//var k appLabelWidget
-	k := widget.NewLabel(title1)
+func scenariotitle() {
+	k := widget.NewLabel("")
+	if scenarioCasecounter == "New Scenario" {
+		k.SetText("New Scenario")
+	} else {
+		k.SetText(cases[scenarioCasecounter].Name)
+	}
 	k.Alignment = fyne.TextAlignCenter
-	k.TextStyle = fyne.TextStyle{Bold: true,
-		Underline: true}
-	kb := canvas.NewRectangle(hexColor("#8AF3A4FF"))
+	k.TextStyle = fyne.TextStyle{Bold: true, Underline: true}
+	kb := canvas.NewRectangle(titelcol)
 	sctitle = *container.NewVBox(widget.NewSeparator(), container.New(layout.NewStackLayout(), kb, k), widget.NewSeparator())
 	//sctitle.Move(fyne.Position{X: 0, Y: 45})
-	sctitle.Resize(fyne.NewSize(460, 30))
+	//sctitle.Resize(fyne.NewSize(460, 30))
 }
 
 // create formdialog for scenario name
-func scenarioname(w fyne.Window, case1 scenarios, as map[string][]assumptions) *dialog.FormDialog {
+func scenarioNamePopup(w fyne.Window, case1 scenarios, as map[string][]assumptions) *dialog.FormDialog {
 	a := widget.NewEntry()
 	a.SetPlaceHolder("Type Here..")
 	scenarioinput := widget.FormItem{
@@ -154,43 +184,138 @@ func scenarioname(w fyne.Window, case1 scenarios, as map[string][]assumptions) *
 			if b {
 				// Get input text
 				case1.Name = a.Text
-				cases = append(cases, case1)
-				//fmt.Println(cases[len(cases)-1].Name)
+				cases[strconv.Itoa(casecounter)] = case1
 				caserenderer(as)
-				scenariotitle(a.Text)
+				scenarioCasecounter = strconv.Itoa(casecounter)
+				scenariotitle()
+				casecounter++
+				//makeGUI()
 			}
 		}, w)
-	//fmt.Println(case1.Name)
 	return wap
+}
+
+func removecase(k string) map[string]scenarios {
+	cases1 := make(map[string]scenarios, 0)
+	if len(cases) > 1 {
+		for i := range cases {
+			if i != k {
+				cases1[i] = cases[i]
+			}
+		}
+	}
+	return cases1
+}
+
+func removecasecont(casedisplay map[string]fyne.CanvasObject, k string) map[string]fyne.CanvasObject {
+	cases1 := make(map[string]fyne.CanvasObject)
+	//kint, _ := strconv.Atoi(k)
+	if len(casedisplay) > 1 {
+		for i := range casedisplay {
+			if i != k {
+				cases1[i] = casedisplay[i]
+			}
+		}
+	}
+	return cases1
 }
 
 // creates the case window on the left side as it gets saved
 func caserenderer(as map[string][]assumptions) {
-	outer := make([]fyne.CanvasObject, 0)
+	casewindow.RemoveAll()
+	outer := make(map[string]fyne.CanvasObject, 0)
 	//var name string
-	outer = append(outer, widget.NewLabelWithStyle("Saved Cases", fyne.TextAlignCenter, fyne.TextStyle{Bold: true, Underline: true}))
-	outer = append(outer, widget.NewSeparator())
+	//casebtn := make([]*widget.Button, 0)
+	//casecontainer := make([]*fyne.Container, 0)
 	for k, i := range cases {
 		a := widget.NewLabel(i.Name)
 		b := widget.NewLabel(fmt.Sprintf("%.1f", i.Irr*100) + " %")
-		a.Resize(fyne.NewSize(100, 100))
-		b.Resize(fyne.NewSize(50, 100))
+		//a.Resize(fyne.NewSize(100, 100))
+		//b.Resize(fyne.NewSize(50, 100))
 		c := widget.NewButton("Select", func() {
-			scenariotitle(i.Name)
+			scenarioCasecounter = k
+			scenariotitle()
 			inputbuilder(i.Inputs, as)
+			finaldisplay.Refresh()
+			//name = i.Name
 		})
-		c.Resize(fyne.NewSize(100, 100))
-		var containerColor *canvas.Rectangle
-		if (k/2)*2 == k {
-			containerColor = canvas.NewRectangle(hexColor("#F4F5D4FF"))
-		} else {
-			containerColor = canvas.NewRectangle(hexColor("#83E2C6FF"))
-		}
-		container1 := container.NewGridWithRows(1, a, b, c)
-		containerColor.Resize(container1.Size())
-		container2 := container.New(layout.NewStackLayout(), containerColor, container1)
-		outer = append(outer, container2)
+		d := widget.NewButton("Delete", func() {
+			cases = removecase(k)
+			fmt.Println(len(cases))
+			//caserenderer(as, w)
+			//viewmaker(w)
+			outer = removecasecont(outer, k)
+			if (scenarioCasecounter == k) || (len(cases) == 0) {
+				scenarioCasecounter = "New Scenario"
+				fmt.Println("New Scenario")
+				scenariotitle()
+				finaldisplay.Refresh()
+				//	name = ""
+			}
+			casewindowbuild(outer)
+		})
+		//c.Resize(fyne.NewSize(100, 100))
+
+		container1 := container.NewGridWithRows(1, a, b, c, d)
+		outer[k] = container1
+		//casecontainer = append(casecontainer, container2)
+		//outer = append(outer, container2)
 	}
-	casewindow = *container.NewBorder(widget.NewSeparator(), widget.NewSeparator(), nil, nil, container.NewVBox(outer...))
-	casewindow.Resize(fyne.NewSize(100, 200))
+	casewindowbuild(outer)
+}
+func casewindowbuild(outer map[string]fyne.CanvasObject) {
+	casewindow.RemoveAll()
+	ct := container.New(layout.NewStackLayout(), canvas.NewRectangle(titelcol), widget.NewLabelWithStyle("Saved Cases", fyne.TextAlignCenter, fyne.TextStyle{Bold: true, Underline: true}))
+	casebg := canvas.NewRectangle(hexColor("#F1FACCFF"))
+	outer1 := make([]fyne.CanvasObject, 0)
+	casecount := 0
+	keys := make([]string, 0)
+	for i := range outer {
+		keys = append(keys, i)
+	}
+	sortkeys(keys)
+	for _, k := range keys {
+		var containerColor *canvas.Rectangle
+		if casecount/2*2 == casecount {
+			containerColor = canvas.NewRectangle(hexColor("#F2F594FF"))
+		} else {
+			containerColor = canvas.NewRectangle(hexColor("#D0D389FF"))
+		}
+		container2 := container.New(layout.NewStackLayout(), containerColor, outer[k])
+		outer1 = append(outer1, container2)
+		casecount++
+	}
+	casewindow = *container.NewBorder(widget.NewSeparator(), widget.NewSeparator(), nil, nil, container.NewVBox(ct, widget.NewSeparator(), container.New(layout.NewStackLayout(), casebg, container.NewVBox(outer1...))))
+	casewindow.Resize(fyne.NewSize(200, 200))
+	finaldisplay.Refresh()
+	//makeGUI()
+}
+
+// sort the numbers which are stored as string
+func sortkeys(keys []string) {
+	//keysSorted := make([]string, len(keys))
+	keysAsInt := make([]int, 0)
+	for _, k := range keys {
+		i, _ := strconv.Atoi(k)
+		keysAsInt = append(keysAsInt, i)
+	}
+	BubbleSort(keysAsInt)
+	for i, k := range keysAsInt {
+		keys[i] = strconv.Itoa(k)
+	}
+}
+
+func BubbleSort(data []int) {
+	size := len(data)
+	for i := 0; i < size-1; i++ {
+		for j := 0; j < size-1; j++ {
+			Swap(data, j)
+		}
+	}
+}
+
+func Swap(data []int, index int) {
+	if data[index] > data[index+1] {
+		data[index], data[index+1] = data[index+1], data[index]
+	}
 }
