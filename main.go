@@ -228,7 +228,7 @@ func caserenderer(as map[string][]assumptions) {
 	//casebtn := make([]*widget.Button, 0)
 	//casecontainer := make([]*fyne.Container, 0)
 	for k, i := range cases {
-		a := widget.NewLabel(i.Name)
+		a := widget.NewLabel(trunc(i.Name))
 		b := widget.NewLabel(fmt.Sprintf("%.1f", i.Irr*100) + " %")
 		//a.Resize(fyne.NewSize(100, 100))
 		//b.Resize(fyne.NewSize(50, 100))
@@ -317,5 +317,13 @@ func BubbleSort(data []int) {
 func Swap(data []int, index int) {
 	if data[index] > data[index+1] {
 		data[index], data[index+1] = data[index+1], data[index]
+	}
+}
+
+func trunc(word string) string {
+	if len(word) > 10 {
+		return word[:10] + ".."
+	} else {
+		return word
 	}
 }
