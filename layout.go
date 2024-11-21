@@ -2,17 +2,18 @@ package main
 
 import (
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
 )
 
 const sideWidth = 300
 
 type appLayout struct {
-	title, toolbar, content, actions, cases fyne.CanvasObject
-	//dividers                  [3]fyne.CanvasObject
+	title, toolbar, content, actions, cases, divider fyne.CanvasObject
+	//divider                  [3]fyne.CanvasObject
 }
 
-func newAppLayout(title, toolbar, content, actions, cases fyne.CanvasObject) fyne.Layout {
-	return &appLayout{title: title, toolbar: toolbar, content: content, actions: actions, cases: cases}
+func newAppLayout(title, toolbar, content, actions, cases, divider fyne.CanvasObject) fyne.Layout {
+	return &appLayout{title: title, toolbar: toolbar, content: content, actions: actions, cases: cases, divider: divider}
 }
 
 func (l *appLayout) Layout(_ []fyne.CanvasObject, size fyne.Size) {
@@ -24,10 +25,12 @@ func (l *appLayout) Layout(_ []fyne.CanvasObject, size fyne.Size) {
 	l.toolbar.Move(fyne.NewPos(0, wh))
 	l.content.Resize(fyne.NewSize(size.Width-sideWidth, size.Height-3*wh))
 	l.content.Move(fyne.NewPos(0, wh*2))
+	l.divider.Move(fyne.NewPos(size.Width-sideWidth+theme.SeparatorThicknessSize()*2, 0))
+	l.divider.Resize(fyne.NewSize(theme.SeparatorThicknessSize()*2, size.Height))
 	l.actions.Resize(fyne.NewSize(size.Width-sideWidth, wh))
 	l.actions.Move(fyne.NewPos(0, size.Height-wh))
-	l.cases.Resize(fyne.NewSize(sideWidth, size.Height))
-	l.cases.Move(fyne.NewPos(size.Width-sideWidth, 0))
+	l.cases.Resize(fyne.NewSize(sideWidth-theme.SeparatorThicknessSize()*4, size.Height))
+	l.cases.Move(fyne.NewPos(size.Width-sideWidth+theme.SeparatorThicknessSize()*4, 0))
 }
 
 func (l *appLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
@@ -36,4 +39,31 @@ func (l *appLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 		l.title.MinSize().Height*3+l.content.MinSize().Height,
 	)
 	return borders.AddWidthHeight(100, 100)
+}
+
+type asLayout struct {
+	label, entry, errmsg fyne.CanvasObject
+	//dividers                  [3]fyne.CanvasObject
+}
+
+func newAsLayout(label, entry, errmsg fyne.CanvasObject) fyne.Layout {
+	return &asLayout{label: label, entry: entry, errmsg: errmsg}
+}
+
+func (l *asLayout) Layout(_ []fyne.CanvasObject, size fyne.Size) {
+	wh := size.Height
+	l.label.Resize(fyne.NewSize(size.Width/2, wh))
+	l.label.Move(fyne.NewPos(0, 0))
+	l.entry.Resize(fyne.NewSize(size.Width/4, wh))
+	l.entry.Move(fyne.NewPos(size.Width/2, 0))
+	l.errmsg.Resize(fyne.NewSize(size.Width/4, wh))
+	l.errmsg.Move(fyne.NewPos(size.Width/4*3, 0))
+}
+
+func (l *asLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	borders := fyne.NewSize(
+		400,
+		l.label.MinSize().Height,
+	)
+	return borders
 }

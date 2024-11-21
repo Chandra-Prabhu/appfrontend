@@ -2,40 +2,64 @@ package main
 
 import (
 	"errors"
+	"strconv"
+
 	//"fmt"
 	"math"
 )
 
-func IRRmodel(as map[string]float64, debtscpoption []string) map[string][]float64 {
+func convfloat(s string) float64 {
+	if string(s[len(s)-1]) == "%" {
+		s = s[:len(s)-1]
+		c, _ := strconv.ParseFloat(s, 64)
+		return c / 100
+	} else {
+		c, _ := strconv.ParseFloat(s, 64)
+		return c
+	}
+}
+
+func convint(s string) int {
+	c, _ := strconv.Atoi(s)
+	return c
+}
+
+func IRRmodel(values []inputs) map[string][]float64 {
+	inputs := make(map[string]string)
+	for _, k := range values {
+		inputs[k.Attribute] = k.Value
+	}
 	//fmt.Println("Enter PPA length, tariff")
-	pPALength := int(as["PPA Length"])
-	var constrperiod int = int(as["Construction Period"] / 12)
-	//var tariff float64 = as["Tariff"]
-	var intrate float64 = as["Interest rate"] / 100
-	var mindebtrepay float64 = as["Minimum Debt repayment p.a"] / 100
-	var repaymethod string = debtscpoption[int(as["Repayment method"])]
-	var dscr float64 = as["Minimum DSCR"]
-	var payables float64 = as["Payables"] / 365
-	var receivables float64 = as["Receivables"] / 365
-	var debttenure int = int(as["Debt Tenure"] / 12)
-	var capacity float64 = as["Capacity"]
-	var unitCapex float64 = as["Unit Capex"]
-	var unitOpex float64 = as["Unit Opex"]
-	var costunit float64 = 10000000
-	var cuf float64 = as["CUF"] / 100
-	var degradation float64 = as["Degradation"] / 100
-	var tariffEscalation float64 = as["Tariff Escalation"] / 100
-	var opexEscalation float64 = as["Opex escalation"] / 100
-	var gstrate float64 = as["O&M GST"] / 100
-	var taxrate float64 = as["Corporate tax"] / 100
-	var de float64 = as["Debt as % of Capex"] / 100
-	var deprerate float64 = as["Book Depreciation rate"] / 100
-	var txdeprerate float64 = as["Tax Depreciation rate"] / 100
-	var nondeprecap float64 = as["Non Depreciable Value"] / 100
-	var dsra float64 = as["DSRA"] / 12
+	pPALength := convint(inputs["PPA Length"])
+	constrperiod := convint(inputs["Construction Period"]) / 12
+	tariff := convfloat(inputs["Tariff"])
+	//var tariff float64 = inputs["Tariff"]
+	intrate := convfloat(inputs["Interest rate"])
+	mindebtrepay := convfloat(inputs["Minimum Debt repayment"])
+	repaymethod := convint(inputs["Repayment method"])
+	//fmt.Println(repaymethod)
+	dscr := convfloat(inputs["Minimum DSCR"])
+	payables := convfloat(inputs["Payables"]) / 365
+	receivables := convfloat(inputs["Receivables"]) / 365
+	debttenure := convint(inputs["Debt Tenure"]) / 12
+	capacity := convfloat(inputs["Capacity"])
+	unitCapex := convfloat(inputs["Unit Capex"])
+	unitOpex := convfloat(inputs["Unit Opex"])
+	costunit := 10000000.0
+	cuf := convfloat(inputs["CUF"])
+	degradation := convfloat(inputs["Degradation"])
+	tariffEscalation := convfloat(inputs["Tariff Escalation"])
+	opexEscalation := convfloat(inputs["Opex escalation"])
+	gstrate := convfloat(inputs["O&M GST"])
+	taxrate := convfloat(inputs["Corporate tax"])
+	de := convfloat(inputs["Debt as % of Capex"])
+	deprerate := convfloat(inputs["Book Depreciation rate"])
+	txdeprerate := convfloat(inputs["Tax Depreciation rate"])
+	nondeprecap := convfloat(inputs["Non Depreciable Value"])
+	dsra := convfloat(inputs["DSRA"]) / 12
 	model := make(map[string][]float64)
 	model["Generation"] = constrappend(gencal(capacity, cuf, degradation, pPALength), constrperiod)
-	model["Tariff"] = constrappend(tariffcal(as["Tariff"], tariffEscalation, pPALength), constrperiod)
+	model["Tariff"] = constrappend(tariffcal(tariff, tariffEscalation, pPALength), constrperiod)
 	model["Opex"] = constrappend(tariffcal(unitOpex*capacity*(1.0+gstrate)*costunit, opexEscalation, pPALength), constrperiod)
 	model["Revenue"] = revenuecal(model["Generation"], model["Tariff"])
 	model["EBITDA"] = minus(model["Revenue"], model["Opex"])
@@ -230,14 +254,14 @@ func IRR(values []float64) (float64, error) {
 	return x0, errors.New("could not find irr for the provided values")
 }
 
-func debtrepay(initialloan float64, debttenure int, method string, ebitda1 []float64, intrate float64, dscr float64, mindebtrepay float64) ([]float64, []float64, []float64, []float64, []float64) {
+func debtrepay(initialloan float64, debttenure int, method int, ebitda1 []float64, intrate float64, dscr float64, mindebtrepay float64) ([]float64, []float64, []float64, []float64, []float64) {
 	//fmt.Println(ebitda1)
 	debtrepayment := make([]float64, debttenure)
 	debtoutstanding := make([]float64, debttenure)
 	debtopening := make([]float64, debttenure)
 	interest := make([]float64, debttenure)
 	dscrts := make([]float64, debttenure)
-	if method == "Equal" {
+	if method == 0 {
 		debtopening[0] = initialloan
 		debtrepayment[0] = initialloan / float64(debttenure)
 		debtoutstanding[0] = debtopening[0] - debtrepayment[0]

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 )
 
 /*
@@ -15,6 +16,6 @@ func makeGUI(tabsbuild fyne.CanvasObject, submits fyne.CanvasObject) fyne.Canvas
 */
 
 func makeGUI() {
-	finaldisplay = *container.New(newAppLayout(&sctitle, &tabsbuild, &content1, &submitbtns, &casewindow), &sctitle, &tabsbuild, &content1, &submitbtns, &casewindow)
+	finaldisplay = *container.New(newAppLayout(&sctitle, &tabsbuild, &content1, &submitbtns, &casewindow, widget.NewSeparator()), &sctitle, &tabsbuild, &content1, &submitbtns, &casewindow)
 	finaldisplay.Refresh()
 }

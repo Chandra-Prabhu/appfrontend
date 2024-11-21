@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
 
 	//"fyne.io/fyne/v2/internal/theme"
 	"fyne.io/fyne/v2/layout"
@@ -40,9 +41,9 @@ func main() {
 }
 
 func viewmaker(w fyne.Window) {
-	as, debstscpoption, tabs := assumptionbuild()
-	inputtabmaker(as, tabs)
-	actionbuttons(w, as, debstscpoption)
+	as := assumptionbuild()
+	inputtabmaker(as)
+	actionbuttons(w, as)
 	if scenarioCasecounter == "New Scenario" {
 		inputbuilder(importassumptions(), as)
 	} else {
@@ -56,22 +57,22 @@ func viewmaker(w fyne.Window) {
 }
 
 // assumption set
-func assumptionbuild() (map[string][]assumptions, []string, []string) {
+func assumptionbuild() map[string][]assumptions {
 	as := make(map[string][]assumptions, 0)
-	debtscpoption := []string{"Equal", "Sculpted"}
-	tabs := []string{"Commercial", "Projects", "Financing", "Others"}
+	//debtscpoption := []string{"Equal", "Sculpted"}
+	//tabs := []string{"Commercial", "Projects", "Financing", "Others"}
 	as["Commercial"] = append(as["Commercial"], newAssumptionE("Capacity", "MW"))
 	as["Commercial"] = append(as["Commercial"], newAssumptionE("PPA Length", "years"))
-	as["Commercial"] = append(as["Commercial"], newAssumptionE("Construction Period", "months"))
+	as["Commercial"] = append(as["Commercial"], newAssumptionE("Construction Period", "month"))
 	as["Commercial"] = append(as["Commercial"], newAssumptionE("Tariff", "Rs./KWh"))
 	as["Commercial"] = append(as["Commercial"], newAssumptionE("Tariff Escalation", "% p.a"))
 	as["Financing"] = append(as["Financing"], newAssumptionE("Interest rate", "%"))
 	as["Financing"] = append(as["Financing"], newAssumptionE("Debt as % of Capex", "%"))
-	as["Financing"] = append(as["Financing"], newAssumptionE("Minimum Debt repayment p.a", "% p.a"))
+	as["Financing"] = append(as["Financing"], newAssumptionE("Minimum Debt repayment", "% p.a"))
 	as["Financing"] = append(as["Financing"], newAssumptionE("Minimum DSCR", "x of EBITDA"))
 	as["Financing"] = append(as["Financing"], newAssumptionE("DSRA", "months"))
 	as["Financing"] = append(as["Financing"], newAssumptionE("Debt Tenure", "months"))
-	as["Financing"] = append(as["Financing"], newAssumptionS("Repayment method", debtscpoption))
+	as["Financing"] = append(as["Financing"], newAssumptionS("Repayment method", []string{"Equal", "Sculpted"}))
 	//as["Financing"] = append(as["Financing"], newAssumptionE("Min Debt repayment", "% p.a"))
 	as["Projects"] = append(as["Projects"], newAssumptionE("Capacity", "MW"))
 	as["Projects"] = append(as["Projects"], newAssumptionE("Unit Capex", "Rs.Cr./MW"))
@@ -87,10 +88,16 @@ func assumptionbuild() (map[string][]assumptions, []string, []string) {
 	as["Others"] = append(as["Others"], newAssumptionE("Non Depreciable Value", "%"))
 	as["Others"] = append(as["Others"], newAssumptionE("Payables", "days"))
 	as["Others"] = append(as["Others"], newAssumptionE("Receivables", "days"))
-	return as, debtscpoption, tabs
+	as = solar(as)
+	as = wind(as)
+	return as
 }
 
-func inputtabmaker(as map[string][]assumptions, tabs []string) {
+func inputtabmaker(as map[string][]assumptions) {
+	tabs := make([]string, 0)
+	for i := range as {
+		tabs = append(tabs, i)
+	}
 	inputrenderer(as, tabs[0])
 	click := tabs[0]
 	tabsbtn := make([]fyne.CanvasObject, len(tabs))
@@ -106,18 +113,18 @@ func inputtabmaker(as map[string][]assumptions, tabs []string) {
 	tabsbuild = *container.NewGridWithRows(1, tabsbtn...)
 }
 
-func actionbuttons(w fyne.Window, as map[string][]assumptions, debtscpoption []string) {
-	inputs := make(map[string]float64, 0)
+func actionbuttons(w fyne.Window, as map[string][]assumptions) {
+	inputs := make([]inputs, 0)
 	submitbtn := make([]fyne.CanvasObject, 0)
 	submitbtn = append(submitbtn, widget.NewButton("Run Scenario", func() {
-		inputs = inputgrab(as)
-		IRRmake(IRRmodel(inputs, debtscpoption))
+		inputs = inputGrabAsStr(as)
+		IRRmake(IRRmodel(inputs))
 	}))
 	submitbtn = append(submitbtn, widget.NewButton("Save Scenario", func() {
-		inputs = inputgrab(as)
+		inputs = inputGrabAsStr(as)
 		var case1 scenarios
 		case1.Inputs = inputGrabAsStr(as)
-		case1.Model = IRRmodel(inputs, debtscpoption)
+		case1.Model = IRRmodel(inputs)
 		case1.Irr = IRRmake(case1.Model)
 		if scenarioCasecounter == "New Scenario" {
 			a := scenarioNamePopup(w, case1, as)
@@ -130,17 +137,17 @@ func actionbuttons(w fyne.Window, as map[string][]assumptions, debtscpoption []s
 		}
 	}))
 	submitbtn = append(submitbtn, widget.NewButton("Save As NewScenario", func() {
-		inputs = inputgrab(as)
+		inputs = inputGrabAsStr(as)
 		var case1 scenarios
 		case1.Inputs = inputGrabAsStr(as)
-		case1.Model = IRRmodel(inputs, debtscpoption)
+		case1.Model = IRRmodel(inputs)
 		case1.Irr = IRRmake(case1.Model)
 		a := scenarioNamePopup(w, case1, as)
 		a.Show()
 	}))
 	submitbtn = append(submitbtn, widget.NewButton("Save As Excel", func() {
-		inputs = inputgrab(as)
-		excelfill(IRRmodel(inputs, debtscpoption))
+		inputs = inputGrabAsStr(as)
+		excelfill(IRRmodel(inputs))
 	}))
 	submitbtns = *container.NewGridWithRows(1, submitbtn...)
 }
@@ -185,10 +192,11 @@ func scenarioNamePopup(w fyne.Window, case1 scenarios, as map[string][]assumptio
 				// Get input text
 				case1.Name = a.Text
 				cases[strconv.Itoa(casecounter)] = case1
-				caserenderer(as)
 				scenarioCasecounter = strconv.Itoa(casecounter)
+				caserenderer(as)
 				scenariotitle()
 				casecounter++
+				finaldisplay.Refresh()
 				//makeGUI()
 			}
 		}, w)
@@ -236,10 +244,10 @@ func caserenderer(as map[string][]assumptions) {
 			scenarioCasecounter = k
 			scenariotitle()
 			inputbuilder(i.Inputs, as)
-			finaldisplay.Refresh()
+			casewindowbuild(outer)
 			//name = i.Name
 		})
-		d := widget.NewButton("Delete", func() {
+		d := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
 			cases = removecase(k)
 			fmt.Println(len(cases))
 			//caserenderer(as, w)
@@ -266,9 +274,9 @@ func caserenderer(as map[string][]assumptions) {
 func casewindowbuild(outer map[string]fyne.CanvasObject) {
 	casewindow.RemoveAll()
 	ct := container.New(layout.NewStackLayout(), canvas.NewRectangle(titelcol), widget.NewLabelWithStyle("Saved Cases", fyne.TextAlignCenter, fyne.TextStyle{Bold: true, Underline: true}))
-	casebg := canvas.NewRectangle(hexColor("#F1FACCFF"))
+	casebg := canvas.NewRectangle(hexColor("#EBF7BDFF"))
 	outer1 := make([]fyne.CanvasObject, 0)
-	casecount := 0
+	//casecount := 0
 	keys := make([]string, 0)
 	for i := range outer {
 		keys = append(keys, i)
@@ -276,17 +284,20 @@ func casewindowbuild(outer map[string]fyne.CanvasObject) {
 	sortkeys(keys)
 	for _, k := range keys {
 		var containerColor *canvas.Rectangle
-		if casecount/2*2 == casecount {
-			containerColor = canvas.NewRectangle(hexColor("#F2F594FF"))
+		if k == scenarioCasecounter {
+			containerColor = canvas.NewRectangle(hexColor("#C2F4F7FF"))
 		} else {
-			containerColor = canvas.NewRectangle(hexColor("#D0D389FF"))
+			containerColor = canvas.NewRectangle(hexColor("#F2F594FF"))
 		}
 		container2 := container.New(layout.NewStackLayout(), containerColor, outer[k])
-		outer1 = append(outer1, container2)
-		casecount++
+		outer1 = append(outer1, container2, widget.NewSeparator())
+		//casecount++
 	}
-	casewindow = *container.NewBorder(widget.NewSeparator(), widget.NewSeparator(), nil, nil, container.NewVBox(ct, widget.NewSeparator(), container.New(layout.NewStackLayout(), casebg, container.NewVBox(outer1...))))
-	casewindow.Resize(fyne.NewSize(200, 200))
+	d := widget.NewSeparator()
+	d.CreateRenderer()
+	casewindow = *container.New(layout.NewStackLayout(), casebg, container.NewBorder(widget.NewSeparator(), widget.NewSeparator(), widget.NewSeparator(), nil, container.NewVBox(ct, widget.NewSeparator(), container.NewVBox(outer1...))))
+	//casewindow.Resize(fyne.NewSize(200, 200))
+	casewindow.Refresh()
 	finaldisplay.Refresh()
 	//makeGUI()
 }
