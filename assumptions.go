@@ -151,6 +151,7 @@ func (assumption entryassumptions) inputmaker() fyne.CanvasObject {
 	assumption.Entry.PlaceHolder = "Enter the " + assumption.Name
 	ac := widget.NewLabel(fmt.Sprint(assumption.Name + " in " + assumption.Unit))
 	ad := canvas.NewText("", hexColor("#585858FD"))
+	ad.Resize(fyne.NewSize(20, 10))
 	assumption.Entry.OnChanged = func(a string) {
 		if len(a) > 1 {
 			if string(a[len(a)-1]) == "%" {

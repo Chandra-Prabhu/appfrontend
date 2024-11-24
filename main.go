@@ -40,7 +40,18 @@ func main() {
 	w.ShowAndRun()
 }
 
+/*func projectConfig(){
+	//offtake contract name
+	//offtakecontractlength
+	//compliances add
+	//complaince1 name,value,timeline
+	//ProjectConfig add
+	//Element one name,type, capacity,location,interconnection,delete,comment
+	//Element two same
+}*/
+
 func viewmaker(w fyne.Window) {
+
 	as := assumptionbuild()
 	inputtabmaker(as)
 	actionbuttons(w, as)
@@ -49,48 +60,11 @@ func viewmaker(w fyne.Window) {
 	} else {
 		inputbuilder(cases[scenarioCasecounter].Inputs, as)
 	}
-	content1 = *inputrenderer(as, "Commercial")
+	offtake(as)
 	scenariotitle()
 	caserenderer(as)
 	makeGUI()
 	finaldisplay.Refresh()
-}
-
-// assumption set
-func assumptionbuild() map[string][]assumptions {
-	as := make(map[string][]assumptions, 0)
-	//debtscpoption := []string{"Equal", "Sculpted"}
-	//tabs := []string{"Commercial", "Projects", "Financing", "Others"}
-	as["Commercial"] = append(as["Commercial"], newAssumptionE("Capacity", "MW"))
-	as["Commercial"] = append(as["Commercial"], newAssumptionE("PPA Length", "years"))
-	as["Commercial"] = append(as["Commercial"], newAssumptionE("Construction Period", "month"))
-	as["Commercial"] = append(as["Commercial"], newAssumptionE("Tariff", "Rs./KWh"))
-	as["Commercial"] = append(as["Commercial"], newAssumptionE("Tariff Escalation", "% p.a"))
-	as["Financing"] = append(as["Financing"], newAssumptionE("Interest rate", "%"))
-	as["Financing"] = append(as["Financing"], newAssumptionE("Debt as % of Capex", "%"))
-	as["Financing"] = append(as["Financing"], newAssumptionE("Minimum Debt repayment", "% p.a"))
-	as["Financing"] = append(as["Financing"], newAssumptionE("Minimum DSCR", "x of EBITDA"))
-	as["Financing"] = append(as["Financing"], newAssumptionE("DSRA", "months"))
-	as["Financing"] = append(as["Financing"], newAssumptionE("Debt Tenure", "months"))
-	as["Financing"] = append(as["Financing"], newAssumptionS("Repayment method", []string{"Equal", "Sculpted"}))
-	//as["Financing"] = append(as["Financing"], newAssumptionE("Min Debt repayment", "% p.a"))
-	as["Projects"] = append(as["Projects"], newAssumptionE("Capacity", "MW"))
-	as["Projects"] = append(as["Projects"], newAssumptionE("Unit Capex", "Rs.Cr./MW"))
-	as["Projects"] = append(as["Projects"], newAssumptionE("Unit Opex", "Rs.Cr./MW/yr"))
-	as["Projects"] = append(as["Projects"], newAssumptionE("CUF", "%"))
-	as["Projects"] = append(as["Projects"], newAssumptionE("Degradation", "% p.a"))
-	as["Projects"] = append(as["Projects"], newAssumptionE("Opex escalation", "% p.a"))
-	as["Others"] = append(as["Others"], newAssumptionE("Corporate tax", "%"))
-	as["Others"] = append(as["Others"], newAssumptionE("O&M GST", "%"))
-	as["Others"] = append(as["Others"], newAssumptionS("Depreciation method", []string{"SLM", "Diminshing Balance"}))
-	as["Others"] = append(as["Others"], newAssumptionE("Book Depreciation rate", "%"))
-	as["Others"] = append(as["Others"], newAssumptionE("Tax Depreciation rate", "%"))
-	as["Others"] = append(as["Others"], newAssumptionE("Non Depreciable Value", "%"))
-	as["Others"] = append(as["Others"], newAssumptionE("Payables", "days"))
-	as["Others"] = append(as["Others"], newAssumptionE("Receivables", "days"))
-	as = solar(as)
-	as = wind(as)
-	return as
 }
 
 func inputtabmaker(as map[string][]assumptions) {
@@ -105,12 +79,13 @@ func inputtabmaker(as map[string][]assumptions) {
 		tabsbtn[i] = widget.NewButton(tabs[i], func() {
 			if click != tabs[i] {
 				content1 = *inputrenderer(as, tabs[i])
+				finaldisplay.Refresh()
 				//makeGUI()
 				click = tabs[i]
 			}
 		})
 	}
-	tabsbuild = *container.NewGridWithRows(1, tabsbtn...)
+	tabsbuild = *container.NewGridWithRows(2, tabsbtn...)
 }
 
 func actionbuttons(w fyne.Window, as map[string][]assumptions) {
@@ -164,8 +139,9 @@ func inputrenderer(as map[string][]assumptions, selectedTab string) *fyne.Contai
 
 func scenariotitle() {
 	k := widget.NewLabel("")
-	if scenarioCasecounter == "New Scenario" {
-		k.SetText("New Scenario")
+	_, err := strconv.Atoi(scenarioCasecounter)
+	if err != nil {
+		k.SetText(scenarioCasecounter)
 	} else {
 		k.SetText(cases[scenarioCasecounter].Name)
 	}

@@ -65,6 +65,7 @@ func inputbuilder(values []inputs, as map[string][]assumptions) {
 	k := structToMap(values)
 	for section, tabs := range as {
 		for _, assumption := range tabs {
+			//fmt.Println(section + assumption.inputname())
 			assumption.inputupdate(k[section+assumption.inputname()][0])
 		}
 	}

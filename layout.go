@@ -19,12 +19,13 @@ func newAppLayout(title, toolbar, content, actions, cases, divider fyne.CanvasOb
 func (l *appLayout) Layout(_ []fyne.CanvasObject, size fyne.Size) {
 	//middleHeight := size.Height
 	wh := l.title.MinSize().Height
+	pd := l.title.MinSize().Height * .1
 	l.title.Resize(fyne.NewSize(size.Width-sideWidth, wh))
 	l.title.Move(fyne.NewPos(0, 0))
-	l.toolbar.Resize(fyne.NewSize(size.Width-sideWidth, wh))
-	l.toolbar.Move(fyne.NewPos(0, wh))
-	l.content.Resize(fyne.NewSize(size.Width-sideWidth, size.Height-3*wh))
-	l.content.Move(fyne.NewPos(0, wh*2))
+	l.toolbar.Resize(fyne.NewSize(size.Width-sideWidth, wh*1.5))
+	l.toolbar.Move(fyne.NewPos(0, wh+pd))
+	l.content.Resize(fyne.NewSize(size.Width-sideWidth, size.Height-3.5*wh-3*pd))
+	l.content.Move(fyne.NewPos(0, wh*2.5+pd*2))
 	l.divider.Move(fyne.NewPos(size.Width-sideWidth+theme.SeparatorThicknessSize()*2, 0))
 	l.divider.Resize(fyne.NewSize(theme.SeparatorThicknessSize()*2, size.Height))
 	l.actions.Resize(fyne.NewSize(size.Width-sideWidth, wh))
@@ -35,7 +36,7 @@ func (l *appLayout) Layout(_ []fyne.CanvasObject, size fyne.Size) {
 
 func (l *appLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	borders := fyne.NewSize(
-		sideWidth*3,
+		sideWidth*3.5,
 		l.title.MinSize().Height*3+l.content.MinSize().Height,
 	)
 	return borders.AddWidthHeight(100, 100)
@@ -54,15 +55,15 @@ func (l *asLayout) Layout(_ []fyne.CanvasObject, size fyne.Size) {
 	wh := size.Height
 	l.label.Resize(fyne.NewSize(size.Width/2, wh))
 	l.label.Move(fyne.NewPos(0, 0))
-	l.entry.Resize(fyne.NewSize(size.Width/4, wh))
+	l.entry.Resize(fyne.NewSize(size.Width*1/8, wh))
 	l.entry.Move(fyne.NewPos(size.Width/2, 0))
-	l.errmsg.Resize(fyne.NewSize(size.Width/4, wh))
-	l.errmsg.Move(fyne.NewPos(size.Width/4*3, 0))
+	l.errmsg.Resize(fyne.NewSize(size.Width*3/8, wh))
+	l.errmsg.Move(fyne.NewPos(size.Width*(1.0-3.0/8.0), 0))
 }
 
 func (l *asLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	borders := fyne.NewSize(
-		400,
+		300,
 		l.label.MinSize().Height,
 	)
 	return borders
